@@ -42,10 +42,10 @@ const firebaseConfig = {
 };
 
 // 初期化
-firebase.initializeApp(firebaseConfig);
+const app = firebase.initializeApp(firebaseConfig);
 
-// 名前付きデータベース「click」へ明確に接続
-const db = firebase.app().firestore("click");
+// ★【修正】互換モード(compat)で「click」データベースの認証を完全に通す正しい初期化方法
+const db = firebase.firestore(app, "click");
 
 // p5.jsのグローバルシステムに関数をバインド
 window.setup = setup;
@@ -216,9 +216,9 @@ function mousePressed() {
       sparkles.push(new Sparkle(mouseX, mouseY));
     }
 
-    // ★【デバッグ強化版】送信の成否を完全にログに出します
     console.log("データ送信を試みます...");
     
+    // 安全にマージ保存を実行
     db.collection("game_data").doc("click").set({
       total: firebase.firestore.FieldValue.increment(add)
     }, { merge: true })
@@ -226,7 +226,7 @@ function mousePressed() {
       console.log("【成功】Firebaseへの書き込みが正常に完了しました！");
     })
     .catch(err => {
-      console.error("【致命的エラー】送信に失敗しました。理由:", err.message, err);
+      console.error("【致命的エラー】送信に失敗しました。理由:", err.message);
     });
   }
   return false;
