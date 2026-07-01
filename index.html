@@ -41,13 +41,12 @@
       measurementId: "G-6XJBR4H4QK"
   };
 
-  // 初期化
+// 初期化
   const app = initializeApp(firebaseConfig);
 
-  // ★【最新版】(default)がなくても、「click」データベースに直接超強力に接続する設定
-  const db = initializeFirestore(app, {
-    databaseId: 'click'
-  });
+  // 標準のデータベース（(default)）へシンプルに接続する（一番エラーが起きない書き方）
+  import { getFirestore } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+  const db = getFirestore(app);
 
   // グローバル（プログラム全体）で使えるように関数を登録
   window.sendFirebaseData = async function(addAmount) {
