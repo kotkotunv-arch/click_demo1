@@ -4,7 +4,6 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>タップ連打ゲーム - Refreshing Breeze Edition</title>
-  <!-- p5.jsのライブラリを読み込み -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.0/p5.js"></script>
   <style>
     body {
@@ -24,7 +23,31 @@
 </head>
 <body>
 
-<script>
+<script type="module">
+// Firebaseの読み込み
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getFirestore, doc, updateDoc, increment } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+// Firebaseの設定情報を反映
+const firebaseConfig = {
+  const firebaseConfig = {
+    apiKey: "AIzaSyCH9fcNnpgVnqBJeTNuG11QPr8uTn28aMc",
+    authDomain: "click-4d2a0.firebaseapp.com",
+    projectId: "click-4d2a0",
+    storageBucket: "click-4d2a0.firebasestorage.app",
+    messagingSenderId: "55099695962",
+    appId: "1:55099695962:web:9ea37f3aa992b378e24963",
+    measurementId: "G-6XJBR4H4QK"
+  };
+
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+
+// p5.jsのシステムに関数をバインド
+window.setup = setup;
+window.draw = draw;
+window.mousePressed = mousePressed;
+
 let count = 0;
 let highScore = 0;
 let btnScale = 1.0;
@@ -98,7 +121,7 @@ function drawGradientBackground() {
 function drawTitle() {
   textAlign(CENTER, CENTER);
   noStroke();
-  textFont('sans-serif'); // ウェブ標準フォントに変更
+  textFont('sans-serif');
   fill(100, 150, 180, 60);
   textSize(22);
   text("地域共創デザイン実習", width / 2 + 1, 51);
@@ -174,7 +197,6 @@ function updateEffects() {
   }
 }
 
-// マウスとスマホのタップ両方に対応
 function mousePressed() {
   let d = dist(mouseX, mouseY, width / 2, height / 2 + 50);
   if (d < 75) {
@@ -191,8 +213,14 @@ function mousePressed() {
       splashes.push(new SplashParticle(mouseX, mouseY));
       sparkles.push(new Sparkle(mouseX, mouseY));
     }
+
+    // ★Firebaseへデータをリアルタイム送信
+    const clickRef = doc(db, "game_data", "clicks");
+    updateDoc(clickRef, {
+      total: increment(add)
+    }).catch(err => console.error("データ送信エラー:", err));
   }
-  return false; // スマホでのダブルタップズームなどを防止
+  return false;
 }
 
 class SplashParticle {
@@ -205,22 +233,18 @@ class SplashParticle {
     this.size = random(8, 20);
     this.c = lerpColor(color(100, 200, 255), color(255), random(1));
   }
-
   update() {
     this.x += this.vx;
     this.y += this.vy;
     this.vy += 0.4;
     this.alpha -= 7;
   }
-
   display() {
     noStroke();
-    // p5.jsではcolorオブジェクトに直接アルファ値を設定するか、setAlphaを使います
     let col = color(red(this.c), green(this.c), blue(this.c), this.alpha);
     fill(col);
     ellipse(this.x, this.y, this.size, this.size);
   }
-
   isDead() { return this.alpha <= 0; }
 }
 
@@ -232,20 +256,17 @@ class Sparkle {
     this.speed = random(2, 6);
     this.alpha = 255;
   }
-
   update() {
     this.x += cos(this.angle) * this.speed;
     this.y += sin(this.angle) * this.speed;
     this.alpha -= 12;
   }
-
   display() {
     stroke(255, this.alpha);
     strokeWeight(2);
     line(this.x - 4, this.y, this.x + 4, this.y);
     line(this.x, this.y - 4, this.x, this.y + 4);
   }
-
   isDead() { return this.alpha <= 0; }
 }
 
@@ -254,7 +275,6 @@ class Bubble {
     this.init();
     this.y = random(height);
   }
-
   init() {
     this.x = random(width);
     this.y = height + 50;
@@ -262,19 +282,16 @@ class Bubble {
     this.speed = random(0.8, 2.5);
     this.opacity = random(30, 80);
   }
-
   update() {
     this.y -= this.speed;
     this.x += sin(frameCount * 0.03 + this.r) * 0.4;
     if (this.y < -this.r) this.init();
   }
-
   display() {
     stroke(255, this.opacity + 20);
     strokeWeight(1);
     fill(255, 255, 255, this.opacity);
     ellipse(this.x, this.y, this.r, this.r);
-    
     noStroke();
     fill(255, 255, 255, this.opacity + 40);
     ellipse(this.x - this.r / 4, this.y - this.r / 4, this.r / 5, this.r / 5);
