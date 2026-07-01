@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>タップ連打ゲーム - Refreshing Breeze Edition</title>
+  <!-- p5.jsのライブラリを読み込み -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.0/p5.js"></script>
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      background: #f0f0f0;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+    }
+    canvas {
+      box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+      border-radius: 12px;
+    }
+  </style>
+</head>
+<body>
+
+<script>
+let count = 0;
+let highScore = 0;
+let btnScale = 1.0;
+let heat = 0;
+let combo = 0;
+let shake = 0;
+let isFever = false;
+
+let splashes = [];
+let sparkles = [];
+let bubbles = [];
+
+function setup() {
+  createCanvas(400, 700);
+  noStroke();
+
+  // 背景の泡を初期化
+  for (let i = 0; i < 20; i++) {
+    bubbles.push(new Bubble());
+  }
+}
+
+function draw() {
+  drawGradientBackground();
+
+  push();
+  if (shake > 0.1) {
+    translate(random(-shake, shake), random(-shake, shake));
+    shake *= 0.85;
+  }
+
+  // 背景の泡描画
+  for (let b of bubbles) {
+    b.update();
+    b.display();
+  }
+
+  drawTitle();
+  updateEffects();
+  drawUI();
+  drawButton();
+
+  pop();
+
+  btnScale = lerp(btnScale, 1.0, 0.15);
+  heat = max(0, heat - (isFever ? 1.5 : 0.8));
+  combo = max(0, combo - 0.04);
+
+  if (heat >= 255) isFever = true;
+  if (heat <= 0) isFever = false;
+}
+
+function drawGradientBackground() {
+  let c1, c2;
+  if (isFever) {
+    let shift = sin(frameCount * 0.1) * 20;
+    c1 = color(150 + shift, 255, 255);
+    c2 = color(100, 200 + shift, 255);
+  } else {
+    c1 = lerpColor(color(240, 255, 255), color(180, 240, 255), heat / 255.0);
+    c2 = lerpColor(color(230, 255, 240), color(150, 230, 200), heat / 255.0);
+  }
+
+  for (let i = 0; i <= height; i++) {
+    let inter = map(i, 0, height, 0, 1);
+    stroke(lerpColor(c1, c2, inter));
+    line(0, i, width, i);
+  }
+}
+
+function drawTitle() {
+  textAlign(CENTER, CENTER);
+  noStroke();
+  textFont('sans-serif'); // ウェブ標準フォントに変更
+  fill(100, 150, 180, 60);
+  textSize(22);
+  text("地域共創デザイン実習", width / 2 + 1, 51);
+  fill(60, 100, 120);
+  text("地域共創デザイン実習", width / 2, 50);
+}
+
+function drawUI() {
+  textAlign(CENTER, CENTER);
+  fill(50, 80, 100);
+  textSize(60);
+  text(count, width / 2, 160);
+
+  textSize(18);
+  fill(80, 110, 130);
+  text("HIGH SCORE: " + highScore, width / 2, 210);
+
+  if (combo > 1) {
+    fill(50, 180, 220, min(255, combo * 50));
+    textSize(24 + min(20, combo));
+    text(Math.floor(combo) + " COMBO!", width / 2, 260);
+  }
+
+  noStroke();
+  fill(255, 255, 255, 180);
+  rect(100, 620, 200, 10, 5);
+  if (isFever) {
+    fill(50, 255, 255, 150 + sin(frameCount * 0.2) * 100);
+  } else {
+    fill(100, 220, 255);
+  }
+  rect(100, 620, map(heat, 0, 255, 0, 200), 10, 5);
+}
+
+function drawButton() {
+  push();
+  translate(width / 2, height / 2 + 50);
+  scale(btnScale);
+
+  fill(50, 100, 150, 15);
+  ellipse(5, 8, 160, 160);
+
+  strokeWeight(5);
+  stroke(255);
+  if (isFever) {
+    fill(120, 255, 240);
+  } else {
+    fill(180, 230, 255);
+  }
+  ellipse(0, 0, 150, 150);
+
+  noStroke();
+  fill(255, 255, 255, 100);
+  ellipse(-30, -30, 40, 20);
+
+  fill(255);
+  textSize(28);
+  text("PUSH!", 0, 0);
+  pop();
+}
+
+function updateEffects() {
+  for (let i = splashes.length - 1; i >= 0; i--) {
+    splashes[i].update();
+    splashes[i].display();
+    if (splashes[i].isDead()) splashes.splice(i, 1);
+  }
+
+  for (let i = sparkles.length - 1; i >= 0; i--) {
+    sparkles[i].update();
+    sparkles[i].display();
+    if (sparkles[i].isDead()) sparkles.splice(i, 1);
+  }
+}
+
+// マウスとスマホのタップ両方に対応
+function mousePressed() {
+  let d = dist(mouseX, mouseY, width / 2, height / 2 + 50);
+  if (d < 75) {
+    let add = isFever ? 3 : 1;
+    count += add;
+    if (count > highScore) highScore = count;
+
+    btnScale = 0.88;
+    heat = min(255, heat + 18);
+    combo += 1.0;
+    shake = isFever ? 8 : 3;
+
+    for (let i = 0; i < (isFever ? 8 : 4); i++) {
+      splashes.push(new SplashParticle(mouseX, mouseY));
+      sparkles.push(new Sparkle(mouseX, mouseY));
+    }
+  }
+  return false; // スマホでのダブルタップズームなどを防止
+}
+
+class SplashParticle {
+  constructor(x, y) {
+    this.x = x;
+    this.y = y;
+    this.vx = random(-4, 4);
+    this.vy = random(-10, -2);
+    this.alpha = 255;
+    this.size = random(8, 20);
+    this.c = lerpColor(color(100, 200, 255), color(255), random(1));
+  }
+
+  update() {
+    this.x += this.vx;
+    this.y += this.vy;
+    this.vy += 0.4;
+    this.alpha -= 7;
+  }
+
+  display() {
+    noStroke();
+    // p5.jsではcolorオブジェクトに直接アルファ値を設定するか、setAlphaを使います
+    let col = color(red(this.c), green(this.c), blue(this.c), this.alpha);
+    fill(col);
+    ellipse(this.x, this.y, this.size, this.size);
+  }
+
+  isDead() { return this.alpha <= 0; }
+}
+
+class Sparkle {
+  constructor(x, y) {
+    this.x = x;
+    this.y = y;
+    this.angle = random(TWO_PI);
+    this.speed = random(2, 6);
+    this.alpha = 255;
+  }
+
+  update() {
+    this.x += cos(this.angle) * this.speed;
+    this.y += sin(this.angle) * this.speed;
+    this.alpha -= 12;
+  }
+
+  display() {
+    stroke(255, this.alpha);
+    strokeWeight(2);
+    line(this.x - 4, this.y, this.x + 4, this.y);
+    line(this.x, this.y - 4, this.x, this.y + 4);
+  }
+
+  isDead() { return this.alpha <= 0; }
+}
+
+class Bubble {
+  constructor() {
+    this.init();
+    this.y = random(height);
+  }
+
+  init() {
+    this.x = random(width);
+    this.y = height + 50;
+    this.r = random(10, 50);
+    this.speed = random(0.8, 2.5);
+    this.opacity = random(30, 80);
+  }
+
+  update() {
+    this.y -= this.speed;
+    this.x += sin(frameCount * 0.03 + this.r) * 0.4;
+    if (this.y < -this.r) this.init();
+  }
+
+  display() {
+    stroke(255, this.opacity + 20);
+    strokeWeight(1);
+    fill(255, 255, 255, this.opacity);
+    ellipse(this.x, this.y, this.r, this.r);
+    
+    noStroke();
+    fill(255, 255, 255, this.opacity + 40);
+    ellipse(this.x - this.r / 4, this.y - this.r / 4, this.r / 5, this.r / 5);
+  }
+}
+</script>
+
+</body>
+</html>
