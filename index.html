@@ -26,10 +26,9 @@
 <script type="module">
 // Firebaseの読み込み
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-import { getFirestore, doc, updateDoc, increment } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+import { initializeFirestore, doc, updateDoc, increment } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
 // Firebaseの設定情報を反映
-// Firebaseの初期化に必要な設定
 const firebaseConfig = {
     apiKey: "AIzaSyCH9fcNnpgVnqBJeTNuG11QPr8uTn28aMc",
     authDomain: "click-4d2a0.firebaseapp.com",
@@ -40,7 +39,11 @@ const firebaseConfig = {
     measurementId: "G-6XJBR4H4QK"
 };
 const app = initializeApp(firebaseConfig);
-const db = getFirestore(app);
+
+// ★データベースID「click」を明示的に指定して接続
+const db = initializeFirestore(app, {
+  databaseId: 'click'
+});
 
 // p5.jsのシステムに関数をバインド
 window.setup = setup;
@@ -163,7 +166,8 @@ function drawButton() {
   fill(50, 100, 150, 15);
   ellipse(5, 8, 160, 160);
 
-  strokeWeight(5);
+  makeStrokeWeight(5);
+  function makeStrokeWeight(w) { strokeWeight(w); }
   stroke(255);
   if (isFever) {
     fill(120, 255, 240);
@@ -213,8 +217,8 @@ function mousePressed() {
       sparkles.push(new Sparkle(mouseX, mouseY));
     }
 
-    // ★Firebaseへデータをリアルタイム送信
-    const clickRef = doc(db, "game_data", "clicks");
+    // ★Firebaseへデータをリアルタイム送信（ドキュメント名を先ほど作成した「click」に完全一致させました！）
+    const clickRef = doc(db, "game_data", "click");
     updateDoc(clickRef, {
       total: increment(add)
     }).catch(err => console.error("データ送信エラー:", err));
