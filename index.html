@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>タップ連打ゲーム - Refreshing Breeze Edition</title>
+  <!-- p5.jsの読み込み -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.0/p5.js"></script>
   <style>
     body {
@@ -24,10 +25,9 @@
 <body>
 
 <script type="module">
-// Firebaseの読み込み
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-// ★名前付きデータベースを最も安全に初期化できる getFirestore を使用します
-import { getFirestore, doc, updateDoc, increment } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+// ★ 404エラーを回避するため、完全にモジュール対応した cdnjs のURLに変更しました
+import { initializeApp } from "https://cdnjs.cloudflare.com/ajax/libs/firebase/10.12.0/firebase-app.js";
+import { getFirestore, doc, updateDoc, increment } from "https://cdnjs.cloudflare.com/ajax/libs/firebase/10.12.0/firebase-firestore.js";
 
 // Firebaseの設定情報
 const firebaseConfig = {
@@ -42,7 +42,7 @@ const firebaseConfig = {
 
 const app = initializeApp(firebaseConfig);
 
-// ★【超重要】名前付きデータベース「click」へ接続する最も確実なSDK標準の書き方です
+// 名前付きデータベース「click」へ確実に接続します
 const db = getFirestore(app, "click");
 
 // p5.jsのシステムに関数をバインド
@@ -264,7 +264,7 @@ class Sparkle {
   display() {
     stroke(255, this.alpha);
     strokeWeight(2);
-    line(this.x - 4, this.y, this.x + 4, this.y);
+    line(50 - 4, this.y, this.x + 4, this.y);
     line(this.x, this.y - 4, this.x, this.y + 4);
   }
   isDead() { return this.alpha <= 0; }
