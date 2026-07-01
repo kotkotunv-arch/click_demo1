@@ -26,8 +26,8 @@
 <script type="module">
 // Firebaseの読み込み
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-// ★ initializeFirestore ではなく getFirestore を使う一般的な書き方に戻します
-import { getFirestore, doc, updateDoc, increment } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+// ★ initializeFirestore を使う形式に戻し、余計なプロパティをすべて排除します
+import { initializeFirestore, doc, updateDoc, increment } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
 // Firebaseの設定情報
 const firebaseConfig = {
@@ -40,17 +40,12 @@ const firebaseConfig = {
     measurementId: "G-6XJBR4H4QK"
 };
 
-// ★ここが名前付きデータベース「click」に繋ぐための最善の修正です！
-// プロジェクトIDの後ろにデータベース名を直接指定した特別なプロパティを差し込みます
-const updatedConfig = {
-  ...firebaseConfig,
-  firestore: {
-    database: 'click'
-  }
-};
+const app = initializeApp(firebaseConfig);
 
-const app = initializeApp(updatedConfig);
-const db = getFirestore(app);
+// ★ここが名前付きデータベース「click」に繋ぐ正しい初期化方法です！
+const db = initializeFirestore(app, {
+  databaseId: 'click'
+});
 
 // p5.jsのシステムに関数をバインド
 window.setup = setup;
