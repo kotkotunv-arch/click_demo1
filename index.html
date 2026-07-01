@@ -25,39 +25,35 @@
 </head>
 <body>
 
-<!-- 2. 最新のFirebase (v10) をモジュールとして読み込み、設定する -->
+<!-- 2. 最新のFirebaseをモジュールとして読み込み、設定する（完全版） -->
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-  import { initializeFirestore, doc, setDoc, increment } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+  import { getFirestore, doc, setDoc, increment } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
-  // Firebaseの設定情報
-// Firebaseの設定情報（正しいプロジェクトIDに修正しました！）
+  // 琴子さんが今取得してくれた、新しいプロジェクトの正しいConfig情報です！
   const firebaseConfig = {
-      apiKey: "AIzaSyCH9fcNnpgVnqBJeTNuG11QPr8uTn28aMc",
-      authDomain: "click-d8d30.firebaseapp.com",
-      projectId: "click-d8d30",
-      storageBucket: "click-d8d30.firebasestorage.app",
-      messagingSenderId: "55099695962",
-      appId: "1:55099695962:web:9ea37f3aa992b378e24963",
-      measurementId: "G-6XJBR4H4QK"
+    apiKey: "AIzaSyB9dmK3jKzOHb4derGvT99C_ZKAtdjcMx4",
+    authDomain: "click-d8d30.firebaseapp.com",
+    projectId: "click-d8d30",
+    storageBucket: "click-d8d30.firebasestorage.app",
+    messagingSenderId: "93053971624",
+    appId: "1:93053971624:web:5316d12feb08cfbf83e69d",
+    measurementId: "G-CD527GGT28"
   };
 
-// 初期化
+  // 初期化
   const app = initializeApp(firebaseConfig);
-
-  // 標準のデータベース（(default)）へシンプルに接続する（一番エラーが起きない書き方）
-  import { getFirestore } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
   const db = getFirestore(app);
 
   // グローバル（プログラム全体）で使えるように関数を登録
   window.sendFirebaseData = async function(addAmount) {
-    console.log("【最新システム】clickデータベースへ送信を開始します...");
+    console.log("【最新システム】正しい住所(click-d8d30)へ送信を開始します...");
     try {
       const docRef = doc(db, "game_data", "click");
       await setDoc(docRef, {
         total: increment(addAmount)
       }, { merge: true });
-      console.log("【✨完全成功✨】Firebase(click)への書き込みが100%成功しました！");
+      console.log("【✨完全成功✨】Firebaseへの書き込みが100%成功しました！");
     } catch (err) {
       console.error("【エラー発生】原因はこれです:", err.message);
     }
