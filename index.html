@@ -6,10 +6,6 @@
   <title>タップ連打ゲーム - Refreshing Breeze Edition</title>
   <!-- 1. p5.jsの読み込み -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.0/p5.js"></script>
-  
-  <!-- 2. Firebase一括読み込み -->
-  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
 
   <style>
     body {
@@ -29,24 +25,46 @@
 </head>
 <body>
 
+<!-- 2. 最新のFirebase (v10) をモジュールとして読み込み、設定する -->
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+  import { initializeFirestore, doc, setDoc, increment } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+  // Firebaseの設定情報
+  const firebaseConfig = {
+      apiKey: "AIzaSyCH9fcNnpgVnqBJeTNuG11QPr8uTn28aMc",
+      authDomain: "click-4d2a0.firebaseapp.com",
+      projectId: "click-4d2a0",
+      storageBucket: "click-4d2a0.firebasestorage.app",
+      messagingSenderId: "55099695962",
+      appId: "1:55099695962:web:9ea37f3aa992b378e24963",
+      measurementId: "G-6XJBR4H4QK"
+  };
+
+  // 初期化
+  const app = initializeApp(firebaseConfig);
+
+  // ★【最新版】(default)がなくても、「click」データベースに直接超強力に接続する設定
+  const db = initializeFirestore(app, {
+    databaseId: 'click'
+  });
+
+  // グローバル（プログラム全体）で使えるように関数を登録
+  window.sendFirebaseData = async function(addAmount) {
+    console.log("【最新システム】clickデータベースへ送信を開始します...");
+    try {
+      const docRef = doc(db, "game_data", "click");
+      await setDoc(docRef, {
+        total: increment(addAmount)
+      }, { merge: true });
+      console.log("【✨完全成功✨】Firebase(click)への書き込みが100%成功しました！");
+    } catch (err) {
+      console.error("【エラー発生】原因はこれです:", err.message);
+    }
+  };
+</script>
+
 <script>
-// Firebaseの設定情報
-const firebaseConfig = {
-    apiKey: "AIzaSyCH9fcNnpgVnqBJeTNuG11QPr8uTn28aMc",
-    authDomain: "click-4d2a0.firebaseapp.com",
-    projectId: "click-4d2a0",
-    storageBucket: "click-4d2a0.firebasestorage.app",
-    messagingSenderId: "55099695962",
-    appId: "1:55099695962:web:9ea37f3aa992b378e24963",
-    measurementId: "G-6XJBR4H4QK"
-};
-
-// 初期化
-const app = firebase.initializeApp(firebaseConfig);
-
-// ★【修正】互換モード(compat)で「click」データベースの認証を完全に通す正しい初期化方法
-const db = firebase.firestore(app, "click");
-
 // p5.jsのグローバルシステムに関数をバインド
 window.setup = setup;
 window.draw = draw;
@@ -216,18 +234,10 @@ function mousePressed() {
       sparkles.push(new Sparkle(mouseX, mouseY));
     }
 
-    console.log("データ送信を試みます...");
-    
-    // 安全にマージ保存を実行
-    db.collection("game_data").doc("click").set({
-      total: firebase.firestore.FieldValue.increment(add)
-    }, { merge: true })
-    .then(() => {
-      console.log("【成功】Firebaseへの書き込みが正常に完了しました！");
-    })
-    .catch(err => {
-      console.error("【致命的エラー】送信に失敗しました。理由:", err.message);
-    });
+    // 上で定義した最新の送信関数を呼び出す
+    if (window.sendFirebaseData) {
+      window.sendFirebaseData(add);
+    }
   }
   return false;
 }
