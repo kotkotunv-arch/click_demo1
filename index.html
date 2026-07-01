@@ -29,8 +29,8 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/fireba
 import { getFirestore, doc, updateDoc, increment } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
 // Firebaseの設定情報を反映
+// Firebaseの初期化に必要な設定
 const firebaseConfig = {
-  const firebaseConfig = {
     apiKey: "AIzaSyCH9fcNnpgVnqBJeTNuG11QPr8uTn28aMc",
     authDomain: "click-4d2a0.firebaseapp.com",
     projectId: "click-4d2a0",
@@ -38,7 +38,9 @@ const firebaseConfig = {
     messagingSenderId: "55099695962",
     appId: "1:55099695962:web:9ea37f3aa992b378e24963",
     measurementId: "G-6XJBR4H4QK"
-  };
+};
+
+// このあと initializeApp(firebaseConfig); などが続く...
 
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
