@@ -4,8 +4,13 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>タップ連打ゲーム - Refreshing Breeze Edition</title>
-  <!-- p5.jsの読み込み -->
+  <!-- 1. p5.jsの読み込み -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.0/p5.js"></script>
+  
+  <!-- 2. Firebase一括読み込み（モジュールエラーと404を絶対に防ぐ安定版） -->
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+
   <style>
     body {
       margin: 0;
@@ -24,11 +29,7 @@
 </head>
 <body>
 
-<script type="module">
-// ★ 404エラーを回避するため、完全にモジュール対応した cdnjs のURLに変更しました
-import { initializeApp } from "https://cdnjs.cloudflare.com/ajax/libs/firebase/10.12.0/firebase-app.js";
-import { getFirestore, doc, updateDoc, increment } from "https://cdnjs.cloudflare.com/ajax/libs/firebase/10.12.0/firebase-firestore.js";
-
+<script>
 // Firebaseの設定情報
 const firebaseConfig = {
     apiKey: "AIzaSyCH9fcNnpgVnqBJeTNuG11QPr8uTn28aMc",
@@ -40,12 +41,13 @@ const firebaseConfig = {
     measurementId: "G-6XJBR4H4QK"
 };
 
-const app = initializeApp(firebaseConfig);
+// 初期化
+firebase.initializeApp(firebaseConfig);
 
-// 名前付きデータベース「click」へ確実に接続します
-const db = getFirestore(app, "click");
+// ★名前付きデータベース「click」へ100%確実に接続する設定
+const db = firebase.app().firestore("click");
 
-// p5.jsのシステムに関数をバインド
+// p5.jsのグローバルシステムに関数をバインド
 window.setup = setup;
 window.draw = draw;
 window.mousePressed = mousePressed;
@@ -214,10 +216,9 @@ function mousePressed() {
       sparkles.push(new Sparkle(mouseX, mouseY));
     }
 
-    // 宛先を指定して送信
-    const clickRef = doc(db, "game_data", "click");
-    updateDoc(clickRef, {
-      total: increment(add)
+    // 宛先を指定して送信（安定版の書き方）
+    db.collection("game_data").doc("click").update({
+      total: firebase.firestore.FieldValue.increment(add)
     }).catch(err => console.error("データ送信エラー:", err));
   }
   return false;
@@ -264,7 +265,7 @@ class Sparkle {
   display() {
     stroke(255, this.alpha);
     strokeWeight(2);
-    line(50 - 4, this.y, this.x + 4, this.y);
+    line(this.x - 4, this.y, this.x + 4, this.y);
     line(this.x, this.y - 4, this.x, this.y + 4);
   }
   isDead() { return this.alpha <= 0; }
