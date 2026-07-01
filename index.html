@@ -26,7 +26,8 @@
 <script type="module">
 // Firebaseの読み込み
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-import { initializeFirestore, doc, updateDoc, increment } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+// ★ initializeFirestore ではなく getFirestore を使う一般的な書き方に戻します
+import { getFirestore, doc, updateDoc, increment } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
 // Firebaseの設定情報
 const firebaseConfig = {
@@ -38,14 +39,18 @@ const firebaseConfig = {
     appId: "1:55099695962:web:9ea37f3aa992b378e24963",
     measurementId: "G-6XJBR4H4QK"
 };
-const app = initializeApp(firebaseConfig);
 
-// ★URL指定付きで「click」データベースへ強制接続させます！
-const db = initializeFirestore(app, {
-  databaseId: 'click',
-  host: 'asia-northeast1-firestore.googleapis.com', // ロケーション指定
-  ssl: true
-});
+// ★ここが名前付きデータベース「click」に繋ぐための最善の修正です！
+// プロジェクトIDの後ろにデータベース名を直接指定した特別なプロパティを差し込みます
+const updatedConfig = {
+  ...firebaseConfig,
+  firestore: {
+    database: 'click'
+  }
+};
+
+const app = initializeApp(updatedConfig);
+const db = getFirestore(app);
 
 // p5.jsのシステムに関数をバインド
 window.setup = setup;
@@ -216,7 +221,7 @@ function mousePressed() {
       sparkles.push(new Sparkle(mouseX, mouseY));
     }
 
-    // ★データを送信
+    // 宛先を指定して送信
     const clickRef = doc(db, "game_data", "click");
     updateDoc(clickRef, {
       total: increment(add)
