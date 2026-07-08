@@ -2,10 +2,21 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Refreshing Breeze Edition</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.0/p5.min.js"></script>
     <style>
-        body { margin: 0; display: flex; justify-content: center; align-items: center; height: 100vh; background: #333; }
+        /* body設定に touch-action: none を追加して、さらにスクロールやズームを抑制 */
+        body { 
+            margin: 0; 
+            display: flex; 
+            justify-content: center; 
+            align-items: center; 
+            height: 100vh; 
+            background: #333; 
+            overflow: hidden;
+            touch-action: none; 
+        }
         canvas { box-shadow: 0 0 20px rgba(0,0,0,0.5); }
     </style>
 </head>
@@ -149,6 +160,8 @@
                     splashes.push(new SplashParticle(mouseX, mouseY));
                     sparkles.push(new Sparkle(mouseX, mouseY));
                 }
+                // テキスト選択などを防ぐため、デフォルトのイベントをキャンセル
+                return false;
             }
         }
 
@@ -172,7 +185,7 @@
             }
             update() { this.x += cos(this.angle) * this.speed; this.y += sin(this.angle) * this.speed; this.alpha -= 12; }
             display() { stroke(255, this.alpha); strokeWeight(2); line(this.x-4, this.y, this.x+4, this.y); line(this.x, this.y-4, this.x, this.y+4); }
-            isDead() { return this.alpha <= 0; }
+            isDead() { return this.alpha -= 12 <= 0; }
         }
 
         class Bubble {
