@@ -1,107 +1,51 @@
-<!DOCTYPE html>
-<html lang="ja">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>タップ連打ゲーム - Refreshing Breeze Edition</title>
-  <!-- 1. p5.jsの読み込み -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.0/p5.js"></script>
+// =====================================================
+// タップ連打ゲーム - Refreshing Breeze Edition (集計機能追加)
+// =====================================================
 
-  <style>
-    body {
-      margin: 0;
-      padding: 0;
-      background: #f0f0f0;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      height: 100vh;
-    }
-    canvas {
-      box-shadow: 0 10px 30px rgba(0,0,0,0.1);
-      border-radius: 12px;
-    }
-  </style>
-</head>
-<body>
+int count = 0;
+int highScore = 0;
+int totalCount = 0; // 追加：累計タップ数
+float btnScale = 1.0;
+float heat = 0;
+float combo = 0;
+float shake = 0;
+boolean isFever = false;
 
-<!-- 2. 最新のFirebaseをモジュールとして読み込み、設定する（完全版） -->
-<script type="module">
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-  import { getFirestore, doc, setDoc, increment } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+ArrayList<SplashParticle> splashes = new ArrayList<SplashParticle>();
+ArrayList<Sparkle> sparkles = new ArrayList<Sparkle>();
+ArrayList<Bubble> bubbles = new ArrayList<Bubble>();
 
-  // 琴子さんが今取得してくれた、新しいプロジェクトの正しいConfig情報です！
-  const firebaseConfig = {
-    apiKey: "AIzaSyB9dmK3jKzOHb4derGvT99C_ZKAtdjcMx4",
-    authDomain: "click-d8d30.firebaseapp.com",
-    projectId: "click-d8d30",
-    storageBucket: "click-d8d30.firebasestorage.app",
-    messagingSenderId: "93053971624",
-    appId: "1:93053971624:web:5316d12feb08cfbf83e69d",
-    measurementId: "G-CD527GGT28"
-  };
+PFont jpFont;
 
-// 初期化
-  const app = initializeApp(firebaseConfig);
-  
-  // 【強制解除】ブラウザの古い接続データをリセットし、常に新しい通信を強制する設定
-  import { initializeFirestore } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
-  const db = initializeFirestore(app, {
-    experimentalForceLongPolling: true
-  });
-
-  // グローバル（プログラム全体）で使えるように関数を登録
-  window.sendFirebaseData = async function(addAmount) {
-    console.log("【最新システム】正しい住所(click-d8d30)へ送信を開始します...");
-    try {
-      const docRef = doc(db, "game_data", "click");
-      await setDoc(docRef, {
-        total: increment(addAmount)
-      }, { merge: true });
-      console.log("【✨完全成功✨】Firebaseへの書き込みが100%成功しました！");
-    } catch (err) {
-      console.error("【エラー発生】原因はこれです:", err.message);
-    }
-  };
-</script>
-
-<script>
-// p5.jsのグローバルシステムに関数をバインド
-window.setup = setup;
-window.draw = draw;
-window.mousePressed = mousePressed;
-
-let count = 0;
-let highScore = 0;
-let btnScale = 1.0;
-let heat = 0;
-let combo = 0;
-let shake = 0;
-let isFever = false;
-
-let splashes = [];
-let sparkles = [];
-let bubbles = [];
-
-function setup() {
-  createCanvas(400, 700);
+void setup() {
+  size(400, 700, P2D);
+  smooth(8);
   noStroke();
 
-  for (let i = 0; i < 20; i++) {
-    bubbles.push(new Bubble());
+  try {
+    jpFont = createFont("Yu Gothic UI", 32, true);
+    textFont(jpFont);
+  } catch (Exception e) {
+    println("Font not found.");
+  }
+
+  // 背景の泡を初期化
+  for (int i = 0; i < 20; i++) {
+    bubbles.add(new Bubble());
   }
 }
 
-function draw() {
+void draw() {
   drawGradientBackground();
 
-  push();
+  pushMatrix();
   if (shake > 0.1) {
     translate(random(-shake, shake), random(-shake, shake));
     shake *= 0.85;
   }
 
-  for (let b of bubbles) {
+  // 背景の泡描画
+  for (Bubble b : bubbles) {
     b.update();
     b.display();
   }
@@ -111,7 +55,7 @@ function draw() {
   drawUI();
   drawButton();
 
-  pop();
+  popMatrix();
 
   btnScale = lerp(btnScale, 1.0, 0.15);
   heat = max(0, heat - (isFever ? 1.5 : 0.8));
@@ -121,65 +65,77 @@ function draw() {
   if (heat <= 0) isFever = false;
 }
 
-function drawGradientBackground() {
-  let c1, c2;
+// -----------------------------
+// デザイン描画系 (爽やかカラー)
+// -----------------------------
+
+void drawGradientBackground() {
+  color c1, c2;
   if (isFever) {
-    let shift = sin(frameCount * 0.1) * 20;
+    float shift = sin(frameCount * 0.1) * 20;
     c1 = color(150 + shift, 255, 255);
     c2 = color(100, 200 + shift, 255);
   } else {
-    c1 = lerpColor(color(240, 255, 255), color(180, 240, 255), heat / 255.0);
-    c2 = lerpColor(color(230, 255, 240), color(150, 230, 200), heat / 255.0);
+    c1 = lerpColor(color(240, 255, 255), color(180, 240, 255), heat/255.0);
+    c2 = lerpColor(color(230, 255, 240), color(150, 230, 200), heat/255.0);
   }
 
-  for (let i = 0; i <= height; i++) {
-    let inter = map(i, 0, height, 0, 1);
+  for (int i = 0; i <= height; i++) {
+    float inter = map(i, 0, height, 0, 1);
     stroke(lerpColor(c1, c2, inter));
     line(0, i, width, i);
   }
 }
 
-function drawTitle() {
+void drawTitle() {
   textAlign(CENTER, CENTER);
   noStroke();
-  textFont('sans-serif');
   fill(100, 150, 180, 60);
   textSize(22);
-  text("地域共創デザイン実習", width / 2 + 1, 51);
+  text("地域共創デザイン実習", width/2 + 1, 51);
   fill(60, 100, 120);
-  text("地域共創デザイン実習", width / 2, 50);
+  text("地域共創デザイン実習", width/2, 50);
 }
 
-function drawUI() {
+void drawUI() {
   textAlign(CENTER, CENTER);
+
+  // メインスコア
   fill(50, 80, 100);
   textSize(60);
-  text(count, width / 2, 160);
+  text(count, width/2, 160);
 
+  // ハイスコア
   textSize(18);
   fill(80, 110, 130);
-  text("HIGH SCORE: " + highScore, width / 2, 210);
+  text("HIGH SCORE: " + highScore, width/2, 210);
+
+  // 累計タップ数 (追加箇所)
+  textSize(14);
+  fill(100, 130, 150, 180);
+  text("TOTAL TAPS: " + totalCount, width/2, 235);
 
   if (combo > 1) {
     fill(50, 180, 220, min(255, combo * 50));
     textSize(24 + min(20, combo));
-    text(Math.floor(combo) + " COMBO!", width / 2, 260);
+    text(int(combo) + " COMBO!", width/2, 275);
   }
 
+  // フィーバーゲージ
   noStroke();
   fill(255, 255, 255, 180);
   rect(100, 620, 200, 10, 5);
   if (isFever) {
-    fill(50, 255, 255, 150 + sin(frameCount * 0.2) * 100);
+    fill(50, 255, 255, 150 + sin(frameCount*0.2)*100);
   } else {
     fill(100, 220, 255);
   }
   rect(100, 620, map(heat, 0, 255, 0, 200), 10, 5);
 }
 
-function drawButton() {
-  push();
-  translate(width / 2, height / 2 + 50);
+void drawButton() {
+  pushMatrix();
+  translate(width/2, height/2 + 50);
   scale(btnScale);
 
   fill(50, 100, 150, 15);
@@ -201,28 +157,36 @@ function drawButton() {
   fill(255);
   textSize(28);
   text("PUSH!", 0, 0);
-  pop();
+  popMatrix();
 }
 
-function updateEffects() {
-  for (let i = splashes.length - 1; i >= 0; i--) {
-    splashes[i].update();
-    splashes[i].display();
-    if (splashes[i].isDead()) splashes.splice(i, 1);
+void updateEffects() {
+  for (int i = splashes.size()-1; i >= 0; i--) {
+    SplashParticle p = splashes.get(i);
+    p.update();
+    p.display();
+    if (p.isDead()) splashes.remove(i);
   }
 
-  for (let i = sparkles.length - 1; i >= 0; i--) {
-    sparkles[i].update();
-    sparkles[i].display();
-    if (sparkles[i].isDead()) sparkles.splice(i, 1);
+  for (int i = sparkles.size()-1; i >= 0; i--) {
+    Sparkle s = sparkles.get(i);
+    s.update();
+    s.display();
+    if (s.isDead()) sparkles.remove(i);
   }
 }
 
-function mousePressed() {
-  let d = dist(mouseX, mouseY, width / 2, height / 2 + 50);
+// -----------------------------
+// インタラクション
+// -----------------------------
+
+void mousePressed() {
+  float d = dist(mouseX, mouseY, width/2, height/2 + 50);
   if (d < 75) {
-    let add = isFever ? 3 : 1;
+    int add = isFever ? 3 : 1;
     count += add;
+    totalCount += add; // 累計を加算
+
     if (count > highScore) highScore = count;
 
     btnScale = 0.88;
@@ -230,21 +194,23 @@ function mousePressed() {
     combo += 1.0;
     shake = isFever ? 8 : 3;
 
-    for (let i = 0; i < (isFever ? 8 : 4); i++) {
-      splashes.push(new SplashParticle(mouseX, mouseY));
-      sparkles.push(new Sparkle(mouseX, mouseY));
-    }
-
-    // 上で定義した最新の送信関数を呼び出す
-    if (window.sendFirebaseData) {
-      window.sendFirebaseData(add);
+    for (int i = 0; i < (isFever ? 8 : 4); i++) {
+      splashes.add(new SplashParticle(mouseX, mouseY));
+      sparkles.add(new Sparkle(mouseX, mouseY));
     }
   }
-  return false;
 }
 
+// -----------------------------
+// エフェクトクラス
+// -----------------------------
+
 class SplashParticle {
-  constructor(x, y) {
+  float x, y, vx, vy, alpha;
+  float size;
+  color c;
+
+  SplashParticle(float x, float y) {
     this.x = x;
     this.y = y;
     this.vx = random(-4, 4);
@@ -253,71 +219,79 @@ class SplashParticle {
     this.size = random(8, 20);
     this.c = lerpColor(color(100, 200, 255), color(255), random(1));
   }
-  update() {
-    this.x += this.vx;
-    this.y += this.vy;
-    this.vy += 0.4;
-    this.alpha -= 7;
+
+  void update() {
+    x += vx;
+    y += vy;
+    vy += 0.4;
+    alpha -= 7;
   }
-  display() {
+
+  void display() {
     noStroke();
-    let col = color(red(this.c), green(this.c), blue(this.c), this.alpha);
-    fill(col);
-    ellipse(this.x, this.y, this.size, this.size);
+    fill(c, alpha);
+    ellipse(x, y, size, size);
   }
-  isDead() { return this.alpha <= 0; }
+
+  boolean isDead() { return alpha <= 0; }
 }
 
 class Sparkle {
-  constructor(x, y) {
+  float x, y, angle, speed, alpha;
+
+  Sparkle(float x, float y) {
     this.x = x;
     this.y = y;
     this.angle = random(TWO_PI);
     this.speed = random(2, 6);
     this.alpha = 255;
   }
-  update() {
-    this.x += cos(this.angle) * this.speed;
-    this.y += sin(this.angle) * this.speed;
-    this.alpha -= 12;
+
+  void update() {
+    x += cos(angle) * speed;
+    y += sin(angle) * speed;
+    alpha -= 12;
   }
-  display() {
-    stroke(255, this.alpha);
+
+  void display() {
+    stroke(255, alpha);
     strokeWeight(2);
-    line(this.x - 4, this.y, this.x + 4, this.y);
-    line(this.x, this.y - 4, this.x, this.y + 4);
+    line(x-4, y, x+4, y);
+    line(x, y-4, x, y+4);
   }
-  isDead() { return this.alpha <= 0; }
+
+  boolean isDead() { return alpha <= 0; }
 }
 
 class Bubble {
-  constructor() {
-    this.init();
-    this.y = random(height);
+  float x, y, r, speed, opacity;
+
+  Bubble() {
+    init();
+    y = random(height);
   }
-  init() {
-    this.x = random(width);
-    this.y = height + 50;
-    this.r = random(10, 50);
-    this.speed = random(0.8, 2.5);
-    this.opacity = random(30, 80);
+
+  void init() {
+    x = random(width);
+    y = height + 50;
+    r = random(10, 50);
+    speed = random(0.8, 2.5);
+    opacity = random(30, 80);
   }
-  update() {
-    this.y -= this.speed;
-    this.x += sin(frameCount * 0.03 + this.r) * 0.4;
-    if (this.y < -this.r) this.init();
+
+  void update() {
+    y -= speed;
+    x += sin(frameCount * 0.03 + r) * 0.4;
+    if (y < -r) init();
   }
-  display() {
-    stroke(255, this.opacity + 20);
+
+  void display() {
+    stroke(255, opacity + 20);
     strokeWeight(1);
-    fill(255, 255, 255, this.opacity);
-    ellipse(this.x, this.y, this.r, this.r);
+    fill(255, 255, 255, opacity);
+    ellipse(x, y, r, r);
     noStroke();
-    fill(255, 255, 255, this.opacity + 40);
-    ellipse(this.x - this.r / 4, this.y - this.r / 4, this.r / 5, this.r / 5);
+    fill(255, 255, 255, opacity + 40);
+    ellipse(x - r/4, y - r/4, r/5, r/5);
   }
 }
-</script>
-
-</body>
-</html>
