@@ -1,10 +1,9 @@
 // =====================================================
-// タップ連打ゲーム - Refreshing Breeze Edition (集計機能追加)
+// タップ連打ゲーム - Refreshing Breeze Edition
 // =====================================================
 
 int count = 0;
 int highScore = 0;
-int totalCount = 0; // 追加：累計タップ数
 float btnScale = 1.0;
 float heat = 0;
 float combo = 0;
@@ -29,7 +28,7 @@ void setup() {
     println("Font not found.");
   }
 
-  // 背景の泡を初期化
+  // 背景の泡を初期化（より透明感のある泡に）
   for (int i = 0; i < 20; i++) {
     bubbles.add(new Bubble());
   }
@@ -72,10 +71,12 @@ void draw() {
 void drawGradientBackground() {
   color c1, c2;
   if (isFever) {
+    // フィーバー時は輝く夏の海のようなエメラルド
     float shift = sin(frameCount * 0.1) * 20;
     c1 = color(150 + shift, 255, 255);
     c2 = color(100, 200 + shift, 255);
   } else {
+    // 通常時は澄んだスカイブルーからミントへのグラデーション
     c1 = lerpColor(color(240, 255, 255), color(180, 240, 255), heat/255.0);
     c2 = lerpColor(color(230, 255, 240), color(150, 230, 200), heat/255.0);
   }
@@ -99,29 +100,21 @@ void drawTitle() {
 
 void drawUI() {
   textAlign(CENTER, CENTER);
-
-  // メインスコア
   fill(50, 80, 100);
   textSize(60);
   text(count, width/2, 160);
 
-  // ハイスコア
   textSize(18);
   fill(80, 110, 130);
   text("HIGH SCORE: " + highScore, width/2, 210);
 
-  // 累計タップ数 (追加箇所)
-  textSize(14);
-  fill(100, 130, 150, 180);
-  text("TOTAL TAPS: " + totalCount, width/2, 235);
-
   if (combo > 1) {
     fill(50, 180, 220, min(255, combo * 50));
     textSize(24 + min(20, combo));
-    text(int(combo) + " COMBO!", width/2, 275);
+    text(int(combo) + " COMBO!", width/2, 260);
   }
 
-  // フィーバーゲージ
+  // フィーバーゲージ (爽やかなブルー)
   noStroke();
   fill(255, 255, 255, 180);
   rect(100, 620, 200, 10, 5);
@@ -138,6 +131,7 @@ void drawButton() {
   translate(width/2, height/2 + 50);
   scale(btnScale);
 
+  // 影を薄いブルーに
   fill(50, 100, 150, 15);
   ellipse(5, 8, 160, 160);
 
@@ -150,6 +144,7 @@ void drawButton() {
   }
   ellipse(0, 0, 150, 150);
 
+  // ハイライト（艶出し）
   noStroke();
   fill(255, 255, 255, 100);
   ellipse(-30, -30, 40, 20);
@@ -185,8 +180,6 @@ void mousePressed() {
   if (d < 75) {
     int add = isFever ? 3 : 1;
     count += add;
-    totalCount += add; // 累計を加算
-
     if (count > highScore) highScore = count;
 
     btnScale = 0.88;
@@ -194,6 +187,7 @@ void mousePressed() {
     combo += 1.0;
     shake = isFever ? 8 : 3;
 
+    // 水しぶきのようなパーティクル
     for (int i = 0; i < (isFever ? 8 : 4); i++) {
       splashes.add(new SplashParticle(mouseX, mouseY));
       sparkles.add(new Sparkle(mouseX, mouseY));
@@ -202,7 +196,7 @@ void mousePressed() {
 }
 
 // -----------------------------
-// エフェクトクラス
+// エフェクトクラス (水としぶき)
 // -----------------------------
 
 class SplashParticle {
@@ -217,13 +211,14 @@ class SplashParticle {
     this.vy = random(-10, -2);
     this.alpha = 255;
     this.size = random(8, 20);
+    // 水色〜白のランダム
     this.c = lerpColor(color(100, 200, 255), color(255), random(1));
   }
 
   void update() {
     x += vx;
     y += vy;
-    vy += 0.4;
+    vy += 0.4; // 重力
     alpha -= 7;
   }
 
@@ -290,6 +285,7 @@ class Bubble {
     strokeWeight(1);
     fill(255, 255, 255, opacity);
     ellipse(x, y, r, r);
+    // 泡のテカリ
     noStroke();
     fill(255, 255, 255, opacity + 40);
     ellipse(x - r/4, y - r/4, r/5, r/5);
