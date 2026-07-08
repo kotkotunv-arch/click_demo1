@@ -1,293 +1,186 @@
-// =====================================================
-// タップ連打ゲーム - Refreshing Breeze Edition
-// =====================================================
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <title>Refreshing Breeze Edition</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.0/p5.min.js"></script>
+    <style>
+        body { margin: 0; display: flex; justify-content: center; align-items: center; height: 100vh; background: #333; }
+        canvas { box-shadow: 0 0 20px rgba(0,0,0,0.5); }
+    </style>
+</head>
+<body>
+    <script>
+        let count = 0;
+        let highScore = 0;
+        let totalCount = 0;
+        let btnScale = 1.0;
+        let heat = 0;
+        let combo = 0;
+        let shake = 0;
+        let isFever = false;
 
-int count = 0;
-int highScore = 0;
-float btnScale = 1.0;
-float heat = 0;
-float combo = 0;
-float shake = 0;
-boolean isFever = false;
+        let splashes = [];
+        let sparkles = [];
+        let bubbles = [];
 
-ArrayList<SplashParticle> splashes = new ArrayList<SplashParticle>();
-ArrayList<Sparkle> sparkles = new ArrayList<Sparkle>();
-ArrayList<Bubble> bubbles = new ArrayList<Bubble>();
+        function setup() {
+            createCanvas(400, 700);
+            for (let i = 0; i < 20; i++) bubbles.push(new Bubble());
+        }
 
-PFont jpFont;
+        function draw() {
+            drawGradientBackground();
 
-void setup() {
-  size(400, 700, P2D);
-  smooth(8);
-  noStroke();
+            push();
+            if (shake > 0.1) {
+                translate(random(-shake, shake), random(-shake, shake));
+                shake *= 0.85;
+            }
 
-  try {
-    jpFont = createFont("Yu Gothic UI", 32, true);
-    textFont(jpFont);
-  } catch (Exception e) {
-    println("Font not found.");
-  }
+            for (let b of bubbles) { b.update(); b.display(); }
 
-  // 背景の泡を初期化（より透明感のある泡に）
-  for (int i = 0; i < 20; i++) {
-    bubbles.add(new Bubble());
-  }
-}
+            drawTitle();
+            updateEffects();
+            drawUI();
+            drawButton();
+            pop();
 
-void draw() {
-  drawGradientBackground();
+            btnScale = lerp(btnScale, 1.0, 0.15);
+            heat = max(0, heat - (isFever ? 1.5 : 0.8));
+            combo = max(0, combo - 0.04);
+            if (heat >= 255) isFever = true;
+            if (heat <= 0) isFever = false;
+        }
 
-  pushMatrix();
-  if (shake > 0.1) {
-    translate(random(-shake, shake), random(-shake, shake));
-    shake *= 0.85;
-  }
+        function drawGradientBackground() {
+            let c1, c2;
+            if (isFever) {
+                let shift = sin(frameCount * 0.1) * 20;
+                c1 = color(150 + shift, 255, 255);
+                c2 = color(100, 200 + shift, 255);
+            } else {
+                c1 = lerpColor(color(240, 255, 255), color(180, 240, 255), heat/255.0);
+                c2 = lerpColor(color(230, 255, 240), color(150, 230, 200), heat/255.0);
+            }
+            for (let i = 0; i <= height; i++) {
+                stroke(lerpColor(c1, c2, map(i, 0, height, 0, 1)));
+                line(0, i, width, i);
+            }
+        }
 
-  // 背景の泡描画
-  for (Bubble b : bubbles) {
-    b.update();
-    b.display();
-  }
+        function drawTitle() {
+            textAlign(CENTER, CENTER);
+            noStroke();
+            fill(100, 150, 180, 60);
+            textSize(22);
+            text("地域共創デザイン実習", width/2 + 1, 51);
+            fill(60, 100, 120);
+            text("地域共創デザイン実習", width/2, 50);
+        }
 
-  drawTitle();
-  updateEffects();
-  drawUI();
-  drawButton();
+        function drawUI() {
+            textAlign(CENTER, CENTER);
+            fill(50, 80, 100);
+            textSize(60);
+            text(count, width/2, 160);
+            textSize(18);
+            fill(80, 110, 130);
+            text("HIGH SCORE: " + highScore, width/2, 210);
+            textSize(14);
+            fill(100, 130, 150, 180);
+            text("TOTAL TAPS: " + totalCount, width/2, 235);
 
-  popMatrix();
+            if (combo > 1) {
+                fill(50, 180, 220, min(255, combo * 50));
+                textSize(24 + min(20, combo));
+                text(int(combo) + " COMBO!", width/2, 275);
+            }
 
-  btnScale = lerp(btnScale, 1.0, 0.15);
-  heat = max(0, heat - (isFever ? 1.5 : 0.8));
-  combo = max(0, combo - 0.04);
+            noStroke();
+            fill(255, 255, 255, 180);
+            rect(100, 620, 200, 10, 5);
+            fill(isFever ? color(50, 255, 255, 150 + sin(frameCount*0.2)*100) : color(100, 220, 255));
+            rect(100, 620, map(heat, 0, 255, 0, 200), 10, 5);
+        }
 
-  if (heat >= 255) isFever = true;
-  if (heat <= 0) isFever = false;
-}
+        function drawButton() {
+            push();
+            translate(width/2, height/2 + 50);
+            scale(btnScale);
+            fill(50, 100, 150, 15);
+            noStroke();
+            ellipse(5, 8, 160, 160);
+            strokeWeight(5);
+            stroke(255);
+            fill(isFever ? color(120, 255, 240) : color(180, 230, 255));
+            ellipse(0, 0, 150, 150);
+            noStroke();
+            fill(255, 255, 255, 100);
+            ellipse(-30, -30, 40, 20);
+            fill(255);
+            textSize(28);
+            text("PUSH!", 0, 0);
+            pop();
+        }
 
-// -----------------------------
-// デザイン描画系 (爽やかカラー)
-// -----------------------------
+        function updateEffects() {
+            for (let i = splashes.length - 1; i >= 0; i--) {
+                splashes[i].update(); splashes[i].display();
+                if (splashes[i].isDead()) splashes.splice(i, 1);
+            }
+            for (let i = sparkles.length - 1; i >= 0; i--) {
+                sparkles[i].update(); sparkles[i].display();
+                if (sparkles[i].isDead()) sparkles.splice(i, 1);
+            }
+        }
 
-void drawGradientBackground() {
-  color c1, c2;
-  if (isFever) {
-    // フィーバー時は輝く夏の海のようなエメラルド
-    float shift = sin(frameCount * 0.1) * 20;
-    c1 = color(150 + shift, 255, 255);
-    c2 = color(100, 200 + shift, 255);
-  } else {
-    // 通常時は澄んだスカイブルーからミントへのグラデーション
-    c1 = lerpColor(color(240, 255, 255), color(180, 240, 255), heat/255.0);
-    c2 = lerpColor(color(230, 255, 240), color(150, 230, 200), heat/255.0);
-  }
+        function mousePressed() {
+            if (dist(mouseX, mouseY, width/2, height/2 + 50) < 75) {
+                let add = isFever ? 3 : 1;
+                count += add;
+                totalCount += add;
+                if (count > highScore) highScore = count;
+                btnScale = 0.88;
+                heat = min(255, heat + 18);
+                combo += 1.0;
+                shake = isFever ? 8 : 3;
+                for (let i = 0; i < (isFever ? 8 : 4); i++) {
+                    splashes.push(new SplashParticle(mouseX, mouseY));
+                    sparkles.push(new Sparkle(mouseX, mouseY));
+                }
+            }
+        }
 
-  for (int i = 0; i <= height; i++) {
-    float inter = map(i, 0, height, 0, 1);
-    stroke(lerpColor(c1, c2, inter));
-    line(0, i, width, i);
-  }
-}
+        class SplashParticle {
+            constructor(x, y) {
+                this.x = x; this.y = y;
+                this.vx = random(-4, 4); this.vy = random(-10, -2);
+                this.alpha = 255; this.size = random(8, 20);
+                this.c = lerpColor(color(100, 200, 255), color(255), random(1));
+            }
+            update() { this.x += this.vx; this.y += this.vy; this.vy += 0.4; this.alpha -= 7; }
+            display() { noStroke(); fill(this.c, this.alpha); ellipse(this.x, this.y, this.size, this.size); }
+            isDead() { return this.alpha <= 0; }
+        }
 
-void drawTitle() {
-  textAlign(CENTER, CENTER);
-  noStroke();
-  fill(100, 150, 180, 60);
-  textSize(22);
-  text("地域共創デザイン実習", width/2 + 1, 51);
-  fill(60, 100, 120);
-  text("地域共創デザイン実習", width/2, 50);
-}
+        class Sparkle {
+            constructor(x, y) {
+                this.x = x; this.y = y;
+                this.angle = random(TWO_PI); this.speed = random(2, 6);
+                this.alpha = 255;
+            }
+            update() { this.x += cos(this.angle) * this.speed; this.y += sin(this.angle) * this.speed; this.alpha -= 12; }
+            display() { stroke(255, this.alpha); strokeWeight(2); line(this.x-4, this.y, this.x+4, this.y); line(this.x, this.y-4, this.x, this.y+4); }
+            isDead() { return this.alpha <= 0; }
+        }
 
-void drawUI() {
-  textAlign(CENTER, CENTER);
-  fill(50, 80, 100);
-  textSize(60);
-  text(count, width/2, 160);
-
-  textSize(18);
-  fill(80, 110, 130);
-  text("HIGH SCORE: " + highScore, width/2, 210);
-
-  if (combo > 1) {
-    fill(50, 180, 220, min(255, combo * 50));
-    textSize(24 + min(20, combo));
-    text(int(combo) + " COMBO!", width/2, 260);
-  }
-
-  // フィーバーゲージ (爽やかなブルー)
-  noStroke();
-  fill(255, 255, 255, 180);
-  rect(100, 620, 200, 10, 5);
-  if (isFever) {
-    fill(50, 255, 255, 150 + sin(frameCount*0.2)*100);
-  } else {
-    fill(100, 220, 255);
-  }
-  rect(100, 620, map(heat, 0, 255, 0, 200), 10, 5);
-}
-
-void drawButton() {
-  pushMatrix();
-  translate(width/2, height/2 + 50);
-  scale(btnScale);
-
-  // 影を薄いブルーに
-  fill(50, 100, 150, 15);
-  ellipse(5, 8, 160, 160);
-
-  strokeWeight(5);
-  stroke(255);
-  if (isFever) {
-    fill(120, 255, 240);
-  } else {
-    fill(180, 230, 255);
-  }
-  ellipse(0, 0, 150, 150);
-
-  // ハイライト（艶出し）
-  noStroke();
-  fill(255, 255, 255, 100);
-  ellipse(-30, -30, 40, 20);
-
-  fill(255);
-  textSize(28);
-  text("PUSH!", 0, 0);
-  popMatrix();
-}
-
-void updateEffects() {
-  for (int i = splashes.size()-1; i >= 0; i--) {
-    SplashParticle p = splashes.get(i);
-    p.update();
-    p.display();
-    if (p.isDead()) splashes.remove(i);
-  }
-
-  for (int i = sparkles.size()-1; i >= 0; i--) {
-    Sparkle s = sparkles.get(i);
-    s.update();
-    s.display();
-    if (s.isDead()) sparkles.remove(i);
-  }
-}
-
-// -----------------------------
-// インタラクション
-// -----------------------------
-
-void mousePressed() {
-  float d = dist(mouseX, mouseY, width/2, height/2 + 50);
-  if (d < 75) {
-    int add = isFever ? 3 : 1;
-    count += add;
-    if (count > highScore) highScore = count;
-
-    btnScale = 0.88;
-    heat = min(255, heat + 18);
-    combo += 1.0;
-    shake = isFever ? 8 : 3;
-
-    // 水しぶきのようなパーティクル
-    for (int i = 0; i < (isFever ? 8 : 4); i++) {
-      splashes.add(new SplashParticle(mouseX, mouseY));
-      sparkles.add(new Sparkle(mouseX, mouseY));
-    }
-  }
-}
-
-// -----------------------------
-// エフェクトクラス (水としぶき)
-// -----------------------------
-
-class SplashParticle {
-  float x, y, vx, vy, alpha;
-  float size;
-  color c;
-
-  SplashParticle(float x, float y) {
-    this.x = x;
-    this.y = y;
-    this.vx = random(-4, 4);
-    this.vy = random(-10, -2);
-    this.alpha = 255;
-    this.size = random(8, 20);
-    // 水色〜白のランダム
-    this.c = lerpColor(color(100, 200, 255), color(255), random(1));
-  }
-
-  void update() {
-    x += vx;
-    y += vy;
-    vy += 0.4; // 重力
-    alpha -= 7;
-  }
-
-  void display() {
-    noStroke();
-    fill(c, alpha);
-    ellipse(x, y, size, size);
-  }
-
-  boolean isDead() { return alpha <= 0; }
-}
-
-class Sparkle {
-  float x, y, angle, speed, alpha;
-
-  Sparkle(float x, float y) {
-    this.x = x;
-    this.y = y;
-    this.angle = random(TWO_PI);
-    this.speed = random(2, 6);
-    this.alpha = 255;
-  }
-
-  void update() {
-    x += cos(angle) * speed;
-    y += sin(angle) * speed;
-    alpha -= 12;
-  }
-
-  void display() {
-    stroke(255, alpha);
-    strokeWeight(2);
-    line(x-4, y, x+4, y);
-    line(x, y-4, x, y+4);
-  }
-
-  boolean isDead() { return alpha <= 0; }
-}
-
-class Bubble {
-  float x, y, r, speed, opacity;
-
-  Bubble() {
-    init();
-    y = random(height);
-  }
-
-  void init() {
-    x = random(width);
-    y = height + 50;
-    r = random(10, 50);
-    speed = random(0.8, 2.5);
-    opacity = random(30, 80);
-  }
-
-  void update() {
-    y -= speed;
-    x += sin(frameCount * 0.03 + r) * 0.4;
-    if (y < -r) init();
-  }
-
-  void display() {
-    stroke(255, opacity + 20);
-    strokeWeight(1);
-    fill(255, 255, 255, opacity);
-    ellipse(x, y, r, r);
-    // 泡のテカリ
-    noStroke();
-    fill(255, 255, 255, opacity + 40);
-    ellipse(x - r/4, y - r/4, r/5, r/5);
-  }
-}
+        class Bubble {
+            constructor() { this.init(); this.y = random(height); }
+            init() { this.x = random(width); this.y = height + 50; this.r = random(10, 50); this.speed = random(0.8, 2.5); this.opacity = random(30, 80); }
+            update() { this.y -= this.speed; this.x += sin(frameCount * 0.03 + this.r) * 0.4; if (this.y < -this.r) this.init(); }
+            display() { stroke(255, this.opacity + 20); strokeWeight(1); fill(255, 255, 255, this.opacity); ellipse(this.x, this.y, this.r, this.r); noStroke(); fill(255, 255, 255, this.opacity + 40); ellipse(this.x - this.r/4, this.y - this.r/4, this.r/5, this.r/5); }
+        }
+    </script>
+</body>
+</html>
